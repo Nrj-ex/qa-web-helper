@@ -14,8 +14,8 @@ param = {
     "AUTH_FORM": "Y",
     "TYPE": "AUTH",
     "FORM_TYPE": "FORM_TYPE",
-    "USER_LOGIN": "rgrachev",
-    "USER_PASSWORD": "Cegth@1505407",
+    "USER_LOGIN": "",
+    "USER_PASSWORD": "",
     "USER_REMEMBER": "true"
 
 }
