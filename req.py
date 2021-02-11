@@ -1,55 +1,26 @@
-import requests
-import fake_useragent
-from bs4 import BeautifulSoup
-import json
-
-session = requests.Session()
-
-user = fake_useragent.UserAgent().random
-header = {'user-agent': user}
-
-link = 'https://www.banki.ru/ng-auth/auth/?backurl=%2F'
-param = {
-    "utf": 1,
-    "AUTH_FORM": "Y",
-    "TYPE": "AUTH",
-    "FORM_TYPE": "FORM_TYPE",
-    "USER_LOGIN": "",
-    "USER_PASSWORD": "",
-    "USER_REMEMBER": "true"
-
-}
-
-response = session.post(link, headers=header, verify=False, data=param)
-with open('test_file.html', 'w', encoding="utf-8") as f:
-    f.write(response.text)
+import sqlite3 as sq
+import settings
+import parce_helper
 
 
-# формирование списка с куками
-cookies_dict = [
-    {"domain": key.domain, "name": key.name, "path": key.path, "value": key.value}
-    for key in session.cookies
-]
-
-# Сохранение кук в файл
-with open('cookies_dict.json', 'w', encoding="utf-8") as f:
-    json.dump(cookies_dict, f, sort_keys=True, indent=4, ensure_ascii=False)
+# todo если базы нету создать ее
+con = sq.connect(settings.DB)
+link = "https://yandex.ru/"
+link1 = "https://www.google.ru/"
+link2 = "https://www.banki.ru/insurance3/"
+links1 = [link, link1, link2]
 
 
-with open("cookies_dict.json") as f:
-    cookies_from_file = json.load(f)
-session2 = requests.Session()
-
-for cookies in cookies_from_file:
-    session2.cookies.set(**cookies)
-
-
-
-profile = "https://www.banki.ru/profile/?UID=3741536"
-response2 = session2.get(profile, headers=header, verify=False)
+# todo сделать запуск параллельным
+def check_pages(list_):
+    for i in list_:
+        response = parce_helper.check_page(i)
+        parce_helper.save_page(i, response, con)
+        links = parce_helper.get_links_from_content(i, response)
+        parce_helper.save_links(i, links, con)
 
 
-with open('test_file2.html', 'w', encoding="utf-8") as f:
-    f.write(response2.text)
+check_pages(links1)
 
 
+con.close()

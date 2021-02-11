@@ -1,60 +1,67 @@
 import sqlite3 as sq
 
 
-def sql_drop_table(bd, name):
-    with sq.connect(bd) as con:
+def create_table(db):
+    with sq.connect(db) as con:
         cur = con.cursor()
 
-        cur.execute(f"""DROP TABLE IF EXISTS {name}""")
-        print(f"The {name} table has been deleted.")
+        cur.execute("""CREATE TABLE IF NOT EXISTS page(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            url TEXT,
+            title TEXT,
+            description TEXT,
+            status_code INTEGER DEFAULT 0,
+            level INTEGER,
+            history TEXT,
+            parents TEXT,
+            try INTEGER DEFAULT 0)""")
+
+        cur.execute("""CREATE TABLE IF NOT EXISTS links_list(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    url TEXT,
+                    link TEXT,
+                    internal INTEGER)""")
+    print("The table is created")
 
 
-def sql_execute_request(bd, request):
-    with sq.connect(bd) as con:
+def drop_table(db, table):
+    with sq.connect(db) as con:
         cur = con.cursor()
 
-        cur.execute(f"""{request}""")
-        con.commit()
-        print(f"request done.")
+        cur.execute(f"""DROP TABLE IF EXISTS {table}""")
+        print(f"The {table} table has been deleted.")
 
 
-def sql_update(bd, request, entities):
-    with sq.connect(bd) as con:
+def truncate_table(db, table):
+    with sq.connect(db) as con:
+        cur = con.cursor()
+        cur.execute(f"""DELETE FROM {table}""")
+        print(f"{table} - cleared.")
+
+
+def execute_request(con, request):
+    cur = con.cursor()
+    cur.execute(f"""{request}""")
+    con.commit()
+    print(f"request done.")
+
+
+def update(db, request, entities):
+    with sq.connect(db) as con:
         cur = con.cursor()
         cur.execute(request, entities)
         con.commit()
 
 
-def create_table(bd):
-    with sq.connect(bd) as con:
-        cur = con.cursor()
-
-        cur.execute("""DROP TABLE IF EXISTS links""")
-        cur.execute("""CREATE TABLE IF NOT EXISTS links(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            url TEXT,
-            link TEXT,
-            title TEXT,
-            description TEXT,
-            status_code INTEGER DEFAULT 0,
-            assert TEXT,
-            try INTEGER DEFAULT 0)""")
-    print("The table is created")
-
-
-def sql_insert(con, entities):
+def insert(con, entities):
     cur = con.cursor()
-
     cur.execute('INSERT INTO employees(url, link, title) '
                 'VALUES(?, ?, ?)', entities)
-
     con.commit()
 
 
-def select(bd):
-    with sq.connect(bd) as con:
-        cur = con.cursor()
-
-        cur.execute("""SELECT id, url, link, status_code FROM links """)
-        return cur.fetchall()
+def select(con):
+    cur = con.cursor()
+    cur.execute("""SELECT id, url, link, status_code FROM links """)
+    return cur.fetchall()
 
