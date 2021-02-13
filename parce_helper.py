@@ -89,11 +89,10 @@ def check_links_old1(bd, retry=1):
                 con.commit()
             if "sitemap" in link and status == 200:
                 find_links(link, BD)
-# find_links(MAIN_URL, BD)
-# check_links(BD)
+
+# new
 
 
-#new
 def save_page(url, response, con):
     # сохранение в бд
     cur = con.cursor()
@@ -111,8 +110,6 @@ def save_page(url, response, con):
 
 # сохранение списка ссылок в links_list
 def save_links(parent_url, links_list, con):
-    # todo если parent_url есть в таблице, ничего не сохранять
-    #  значит данные повторяются
     # todo сделать массовую вставку а не по 1 (executemany)
     if links_list is None:
         return None
@@ -134,7 +131,7 @@ def save_links(parent_url, links_list, con):
         print("links don't saved")
 
 
-# найти ссылки в контенте
+# найти все ссылки в контенте
 def get_links_from_content(url, response):
     if response.status_code != 200:
         print(f"{url} не 200!")
@@ -157,21 +154,20 @@ def get_links_from_content(url, response):
             link = url[:url.index("/", 8)] + link
         elif link.startswith("http"):
             pass
+            # какие еще бывают значения href
+
         links.append(link)
     print(f"links on {url} found.")
     return links
-        # какие еще бывают значения href
 
 
-#
+# получение response по одной странице
 def check_page(url):
-    # получение response по одной странице
     from requests import get
     import fake_useragent
     user = fake_useragent.UserAgent().random
     header = {'user-agent': user}
     response = get(url, headers=header)
-    print(response.url)
     print(f"{url} - checked!")
     return response
 
