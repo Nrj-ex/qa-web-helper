@@ -93,23 +93,45 @@ def check_links_old1(bd, retry=1):
 # new
 
 
-def save_page(url, response, con):
+def is_internal(parent_url, url):
+    if parent_url[:20] in url:
+        return 1
+    return 0
+
+
+def save_page(con, url, response=None):
     # сохранение в бд
     cur = con.cursor()
     cur.execute("SELECT id FROM page WHERE url = ?", (url,))
     flag = cur.fetchone()
-    if flag is None:
-        values = (url, response.status_code)
-        cur.execute(f"""INSERT INTO page(url, status_code) 
-            VALUES(?, ?)""", values)
-        con.commit()
-        print(f"{url} - response saved.")
-    else:
-        print("page don't saved")
+    if flag is not None:
+        print(f"{url} - don't saved")
+        return None
+    # переменные по умолчанию если нет response
+    # todo вынести это говно в отдельную функцию)
+    title = None
+    description = None
+    status_code = 0
+    depth = 0
+    history = None
+    internal = None
+    retry = 0
+    if response is not None:
+        status_code = response.status_code
+        depth = response.depth
+    values = (url, title, description, status_code, depth, history, internal, retry)
+    # values = get_values(url, response) должно так вызываться
+    cur.execute(f"""INSERT INTO page(url, title, description, status_code, depth, history, internal, retry) 
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?)""", values)
+    con.commit()
+    print(f"{url} - response saved.")
 
 
 # сохранение списка ссылок в links_list
-def save_links(parent_url, links_list, con):
+# я могу сохранять все в одном месте: 2 метода которые сохраняют в разные таблицы
+# они в одном общем который готовит для них все данные
+# на вход все что есть, если данных нету будет сохраняться что то по умолчанию
+def save_links(con, parent_url, links_list):
     # todo сделать массовую вставку а не по 1 (executemany)
     if links_list is None:
         return None
@@ -118,9 +140,7 @@ def save_links(parent_url, links_list, con):
     flag = cur.fetchone()
     if flag is None:
         for i in links_list:
-            internal = 0
-            if parent_url[:20] in i:
-                internal = 1
+            internal = is_internal(parent_url, i)
             entities = (parent_url, i, internal,)
 
             cur.execute('INSERT INTO links_list(url, link, internal) '
@@ -168,6 +188,8 @@ def check_page(url):
     user = fake_useragent.UserAgent().random
     header = {'user-agent': user}
     response = get(url, headers=header)
+    # todo add depth in response
+    response.depth = 0 # заглушка
     print(f"{url} - checked!")
     return response
 

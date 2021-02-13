@@ -10,11 +10,11 @@ def create_table(db):
             url TEXT,
             title TEXT,
             description TEXT,
-            status_code INTEGER DEFAULT 0,
-            level INTEGER,
+            status_code INTEGER,
+            depth INTEGER,
             history TEXT,
-            parents TEXT,
-            try INTEGER DEFAULT 0)""")
+            internal TEXT,
+            retry INTEGER DEFAULT 0)""")
 
         cur.execute("""CREATE TABLE IF NOT EXISTS links_list(
                     id INTEGER PRIMARY KEY AUTOINCREMENT,

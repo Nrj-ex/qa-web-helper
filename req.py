@@ -17,16 +17,18 @@ links1 = [link, link1, link2]
 def check_pages(list_):
     # todo в зависимости от глубины продолжать работу, брать страницы из базы
     # todo добавить retry
-    # todo list_ сразу записывать в базу а затем брать ссылки на проверку из базы
-    #  так будет только один поставщик ссылок
+
     # todo добавить метод выбора n ссылок из базы page удовлетворяющий параметрам:
     #  status, retry, depth, internal
 
+    # ДЕЛАЮ ЭТО!
+    # todo list_ сразу записывать в базу а затем брать ссылки на проверку из базы
+    #  так будет только один поставщик ссылок
     for i in list_:
         response = parce_helper.check_page(i)
-        parce_helper.save_page(i, response, con)
+        parce_helper.save_page(con, i, response)
         links = parce_helper.get_links_from_content(i, response)
-        parce_helper.save_links(i, links, con)
+        parce_helper.save_links(con, i, links)
 
 
 check_pages(links1)
