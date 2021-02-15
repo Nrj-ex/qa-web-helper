@@ -99,32 +99,39 @@ def is_internal(parent_url, url):
     return 0
 
 
-def save_page(con, url, response=None):
-    # сохранение в бд
-    cur = con.cursor()
-    cur.execute("SELECT id FROM page WHERE url = ?", (url,))
-    flag = cur.fetchone()
-    if flag is not None:
-        print(f"{url} - don't saved")
-        return None
-    # переменные по умолчанию если нет response
-    # todo вынести это говно в отдельную функцию)
+def get_values(url, response=None):
     title = None
     description = None
     status_code = 0
+    # пока 0 понять как вычислять
     depth = 0
     history = None
+    # для первых ссылок с depth 0 = None, 0 - внешняя, 1 - внутренняя
     internal = None
     retry = 0
     if response is not None:
         status_code = response.status_code
         depth = response.depth
-    values = (url, title, description, status_code, depth, history, internal, retry)
-    # values = get_values(url, response) должно так вызываться
+    return url, title, description, status_code, depth, history, internal, retry
+
+
+def save_page(con, url, response=None):
+    # сохранение или обновление результата в бд
+    # todo добавить обновление, учесть когда обновлять не нужно
+    cur = con.cursor()
+    # тут в запросе можно получать необходимые данные для обновления
+    cur.execute("SELECT id FROM page WHERE url = ?", (url,))
+    flag = cur.fetchone()
+    if flag is not None:
+        # запись есть в базе, нужна логика записывать результаты или нет
+        print(f"{url} - don't saved")
+        return
+    values = get_values(url, response)
     cur.execute(f"""INSERT INTO page(url, title, description, status_code, depth, history, internal, retry) 
         VALUES(?, ?, ?, ?, ?, ?, ?, ?)""", values)
     con.commit()
     print(f"{url} - response saved.")
+
 
 
 # сохранение списка ссылок в links_list
@@ -134,7 +141,7 @@ def save_page(con, url, response=None):
 def save_links(con, parent_url, links_list):
     # todo сделать массовую вставку а не по 1 (executemany)
     if links_list is None:
-        return None
+        return
     cur = con.cursor()
     cur.execute("SELECT id FROM links_list WHERE url = ?", (parent_url,))
     flag = cur.fetchone()
@@ -194,5 +201,15 @@ def check_page(url):
     return response
 
 
-
+responses = []
+def check_page_thread(url):
+    from requests import get
+    import fake_useragent
+    user = fake_useragent.UserAgent().random
+    header = {'user-agent': user}
+    response = get(url, headers=header)
+    # todo add depth in response
+    response.depth = 0 # заглушка
+    print(f"{url} - checked!")
+    responses.append((url, response))
 
