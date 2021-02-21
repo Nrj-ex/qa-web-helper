@@ -112,6 +112,7 @@ def get_values(url, response=None):
     if response is not None:
         status_code = response.status_code
         depth = response.depth
+        retry = response.retry + 1
     return url, title, description, status_code, depth, history, internal, retry
 
 
@@ -120,14 +121,26 @@ def save_page(con, url, response=None):
     # todo добавить обновление, учесть когда обновлять не нужно
     cur = con.cursor()
     # тут в запросе можно получать необходимые данные для обновления
-    cur.execute("SELECT id FROM page WHERE url = ?", (url,))
+    cur.execute("SELECT id, retry FROM page WHERE url = ?", (url,))
     flag = cur.fetchone()
     if flag is not None:
         # запись есть в базе, нужна логика записывать результаты или нет
-        print(f"{url} - don't saved")
+        print(f"{url} - updated")
+        try:
+            response.retry = int(flag[1])
+        except AttributeError:
+            return
+        id = flag[0]
+        values = list(get_values(url, response))
+        values.append(id)
+        values = tuple(values)
+        cur.execute("""UPDATE page SET url = ?, title = ?, description = ?, status_code = ?, depth = ?,
+         history = ?, internal = ?, retry = ? WHERE id = ?""", values)
+        con.commit()
         return
+    # получить значения по умолчанию
     values = get_values(url, response)
-    cur.execute(f"""INSERT INTO page(url, title, description, status_code, depth, history, internal, retry) 
+    cur.execute("""INSERT INTO page(url, title, description, status_code, depth, history, internal, retry) 
         VALUES(?, ?, ?, ?, ?, ?, ?, ?)""", values)
     con.commit()
     print(f"{url} - response saved.")
